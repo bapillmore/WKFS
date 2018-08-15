@@ -1,2 +1,2 @@
-# hello-world
-a test repository
+# WKFS
+Repository for project files
