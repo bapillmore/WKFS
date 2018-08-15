@@ -1,2 +1,2 @@
-# WKFS
-Repository for project files
+# Mizuho
+This repository contains VC for Mizuho Project files for working offsite
