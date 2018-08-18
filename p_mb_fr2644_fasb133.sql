@@ -1,7 +1,5 @@
-IF NOT EXISTS(SELECT *
-              FROM sys.procedures
-              WHERE name = N'p_mb_fr2644_fasb133'
-                AND schema_id = SCHEMA_ID('dbo'))
+
+IF NOT EXISTS (SELECT * FROM sys.procedures WHERE name = N'p_mb_fr2644_fasb133' AND schema_id = SCHEMA_ID('dbo'))
   BEGIN
     PRINT N'Creating procedure [dbo].[p_mb_fr2644_fasb133] ...'
     EXEC (N'CREATE PROCEDURE [dbo].[p_mb_fr2644_fasb133] AS RETURN(0)')
@@ -104,17 +102,17 @@ AS
                                                 ISNULL([fp-ct10].[property_value], '') + '|' +
                                                 ISNULL([fp-ct10].[char_cust_element1], ''))
                       ),
-                  tlv.amount,
-                  tlv.valuation_type,
-                  AMORT_COST_USD_Amt = (SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [tlvv].[currency],
+                  tlvv.amount,
+                  tlvv.valuation_type,
+                  AMORT_COST_USD_Amt = (SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [tlvv].[currency],
                                                                    [en].[rpt_currency], (CASE
                                                                                            WHEN [tlvv].[valuation_type] LIKE 'AMORT_COST|%'
                                                                                                    THEN [tlvv].[amount]
                                                                                            ELSE '0' END),
                                                                    [sher].[valuation_date], 0, 2)))),
-                  AMORT_COST_LCL_Amt = CASE
+                  AMORT_COST_LCL_Amt = (CASE
                                          WHEN [tlvv].[valuation_type] LIKE 'AMORT_COST|%' THEN [tlvv].[amount]
-                                         ELSE 0 END
+                                         ELSE 0 END)
       INTO #temp_fasb133_lodep
   FROM [dbo].[t_entity] [en]
          INNER JOIN [dbo].[t_mb_fr2644_hierarchy] [sher] ON [sher].[child_code] = [en].[entity]
@@ -319,7 +317,7 @@ AS
                   [tlp-bf].property_value,
                   tlv.amount,
                   tlv.valuation_type,
-                  NOM_Amount = SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [tlv].[currency],
+                  NOM_Amount = SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [tlv].[currency],
                                                           [en].[rpt_currency], (CASE
                                                                                   WHEN [tlv].[valuation_type] LIKE 'NOM|%'
                                                                                           THEN [tlv].[amount]
@@ -436,21 +434,21 @@ AS
                   [tsilp].property_value,
                   tsilv.amount,
                   tsilv.valuation_type,
-                  NOM_Amount    = SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [tsilv].[currency],
+                  NOM_Amount    = SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [tsilv].[currency],
                                                              [en].[rpt_currency], (CASE
                                                                                      WHEN [tsilv].[valuation_type] LIKE 'NOM|%'
                                                                                              THEN [tsilv].[amount]
                                                                                      ELSE '0' END), sher.valuation_date,
                                                              0, 2))),
-                  FV_USD_Amount = SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [tsilv].[currency],
+                  FV_USD_Amount = SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [tsilv].[currency],
                                                              [en].[rpt_currency], (CASE
                                                                                      WHEN [tsilv].[valuation_type] LIKE 'FAIR_VALUE|%'
                                                                                              THEN [tsilv].[amount]
                                                                                      ELSE '0' END), sher.valuation_date,
                                                              0, 2))),
-                  FV_LCL_Amount = CASE
+                  FV_LCL_Amount = (CASE
                                     WHEN [tsilv].[valuation_type] LIKE 'FAIR_VALUE|%' THEN [tsilv].[amount]
-                                    ELSE 0 END
+                                    ELSE 0 END)
       INTO #temp_fasb133_swaps
   FROM [dbo].[t_entity] [en]
          INNER JOIN [dbo].[t_mb_fr2644_hierarchy] [sher] ON [sher].[child_code] = [en].[entity]
@@ -570,15 +568,15 @@ AS
                   customer_nr             = [#tf133l].[customer_nr],
                   property_value          = [#tf133l].[property_value],
                                             CT_AoC_Key,
-                  AMORT_COST_USD_Amt      = (SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [tlvv].[currency],
+                  AMORT_COST_USD_Amt      = (SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [#tf133l].[currency],
                                                                         [en].[rpt_currency], (CASE
-                                                                                                WHEN [tlvv].[valuation_type] LIKE 'AMORT_COST|%'
-                                                                                                        THEN [tlvv].[amount]
+                                                                                                WHEN [#tf133l].[valuation_type] LIKE 'AMORT_COST|%'
+                                                                                                        THEN [#tf133l].[amount]
                                                                                                 ELSE '0' END),
                                                                         [sher].[valuation_date], 0, 2)))),
-                  AMORT_COST_LCL_Amt      = CASE
-                                              WHEN [tlvv].[valuation_type] LIKE 'AMORT_COST|%' THEN [tlvv].[amount]
-                                              ELSE 0 END,
+                  AMORT_COST_LCL_Amt      = (CASE
+                                              WHEN [#tf133l].[valuation_type] LIKE 'AMORT_COST|%' THEN [#tf133l].[amount]
+                                              ELSE 0 END),
                                             thr.entity,
                                             thr.hedging_relationship,
                                             thr.num_cust_element1  AS is_effective,
@@ -639,7 +637,7 @@ AS
                   is_secured              = [#tf133l].[is_secured],
                   parent_code             = [#tf133l].[parent_code],
                   property_value          = [#tf133l].[property_value],
-                  NOM_Amount              = SUM((dbo.fn_cvt_ccy_amount([en].[char_cust_element1], [#tf133l].[currency],
+                  NOM_Amount              = SUM((dbo.fn_mb_cvt_ccy_amount([en].[char_cust_element1], [#tf133l].[currency],
                                                                        [en].[rpt_currency], (CASE
                                                                                                WHEN [#tf133l].[valuation_type] LIKE 'NOM|%'
                                                                                                        THEN [#tf133l].[amount]
@@ -679,11 +677,9 @@ AS
                   OR thri.item_object_key_value IS NULL))
 
 
-
-
   -- IRSWP
 
-  SELECT DISTINCT (SELECT swap_entity             = [#tf133s].[swap_entity],
+  SELECT DISTINCT         swap_entity             = [#tf133s].[swap_entity],
                           leg_deal_id             = [#tf133s].[leg_deal_id],
                           swap_deal_id            = [#tf133s].[swap_deal_id],
                           start_validity_date     = [#tf133s].[start_validity_date],
@@ -729,7 +725,7 @@ AS
                                  AND thri.item_object_origin = 'IRSWP'
                           LEFT OUTER JOIN #temp_fasb133_swaps #tf133s
                             ON #tf133s.swap_entity + '|' + #tf133s.swap_deal_id =
-                               thri.item_object_key_value) AS SRC_hedge_irswp
+                               thri.item_object_key_value AS SRC_hedge_irswp
 
 
 
@@ -756,17 +752,12 @@ AS
   -- Return success
   RETURN (0)
 
-GO
-IF EXISTS(SELECT *
-          FROM sys.procedures
-          WHERE name = N'p_mb_fr2644_fasb133'
-            AND modify_date > create_date
-            AND modify_date > DATEADD(s, -1, CURRENT_TIMESTAMP)
-            AND schema_id = SCHEMA_ID('dbo'))
-  BEGIN
-    PRINT N'Procedure [dbo].[] has been altered...'
-  END
-ELSE BEGIN
-  PRINT N'Procedure [dbo].[] has NOT been altered due to errors!'
+
+
+IF EXISTS (SELECT * FROM sys.procedures WHERE name = N'p_mb_fr2644_fasb133' AND modify_date > create_date AND modify_date > DATEADD(s, -1, CURRENT_TIMESTAMP) AND schema_id = SCHEMA_ID('dbo'))
+BEGIN
+    PRINT N'Procedure [dbo].[p_mb_fr2644_fasb133] has been altered...'
+END ELSE BEGIN
+    PRINT N'Procedure [dbo].[p_mb_fr2644_fasb133] has NOT been altered due to errors!'
 END
 GO
